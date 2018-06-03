@@ -8,7 +8,7 @@ Created on Tue Dec 12 14:18:55 2017
 import argparse
 import os
 import tensorflow as tf
-from model import stargan
+from StarGAN_Model import stargan
 
 # argument parser
 parser = argparse.ArgumentParser(description='')
