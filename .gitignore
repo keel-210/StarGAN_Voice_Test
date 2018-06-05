@@ -102,3 +102,7 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+IFFT_Test.py
+*.wav
+*.wav
+out_test.wav
