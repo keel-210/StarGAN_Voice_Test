@@ -145,7 +145,8 @@ class stargan(object):
         # summary setting
         self.summary()
 
-        # load train data list & load attribute data
+        # load train data list & load attribute data ここで入力読み込み
+        #data_dirとattr_extractの書き換えでおそらく入力変更可
         dataA_files = load_data_list(self.data_dir)
         dataB_files = np.copy(dataA_files)
         self.attr_names, self.attr_list = attr_extract(self.data_dir)
@@ -228,6 +229,7 @@ class stargan(object):
 
     def test(self):
         # check if attribute available
+        #binary_attrsでtagを指定しているので長さは同じに
         if not len(self.binary_attrs) == self.n_label:
             print("binary_attr length is wrong! The length should be {}".format(
                 self.n_label))
@@ -243,6 +245,8 @@ class stargan(object):
             print(" [!] before training, no need to Load ")
 
         # [5,6] with the seequnce of (realA, realB, fakeB), totally 10 set save
+        # data_dirから適当なサンプルを十持ってきている
+        # 音声データだから連続的に適当な範囲を持ってくる
         test_files = glob(os.path.join(self.data_dir, 'test', '*'))
         testA_list = random.sample(test_files, 10)
 
@@ -255,6 +259,7 @@ class stargan(object):
             imgA, imgA, attrA, attrA, self.image_size, self.n_label)
 
         # generate fakeB
+        # 生成結果はfake_Bの中
         feed = {self.real_A: dataA}
         fake_B = self.sess.run(self.fake_B, feed_dict=feed)
 

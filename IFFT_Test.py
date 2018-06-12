@@ -9,10 +9,8 @@ from scipy.fftpack import fft, ifft
 
 np.seterr(divide='ignore', invalid='ignore')
 
-
 def _pow_scale(fft, p):
     return np.power(fft, p)
-
 
 def overwrap(fft, length, size, stride, phase, scale):
     X = np.zeros((size, length))
@@ -31,7 +29,6 @@ def overwrap(fft, length, size, stride, phase, scale):
         dst[i * stride:i * stride + length] += np.fft.ifft(comp).real
     return dst
 
-
 def FFT(wav, length, stride, window, pos, size, power, scale):
     wave_len = length
     data_fft = np.array([wav[p:p+wave_len, 0]*window for p in range(pos,
@@ -44,7 +41,6 @@ def FFT(wav, length, stride, window, pos, size, power, scale):
     data_fft *= scale
 
     return data_fft, fft_phase
-
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--path', type=str,   default='./test.wav')
@@ -63,17 +59,12 @@ power = 0.2
 scale = 1/18
 
 wav_bps, data = wav.read(args.path)
-print(wav_bps)
 
 datas = np.zeros((100, ((args.length - stride) + size * stride)))
 
 for i in range(100):
     fft_abs, phase = FFT(data, wave_len, stride, window,
                          i * all_size, size, power, scale)
-
-    #plt.plot(fft_abs.real[0], color='r', linewidth=0.5)
-    # plt.show()
-    # plt.waitforbuttonpress(0)
     data_ifft = overwrap(fft_abs[0], wave_len, size, stride, phase, scale)
     data_ifft = np.reshape(data_ifft, -1)
     datas[i] = data_ifft

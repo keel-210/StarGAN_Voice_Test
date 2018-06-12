@@ -9,10 +9,8 @@ from scipy.fftpack import fft, ifft
 
 np.seterr(divide='ignore', invalid='ignore')
 
-
 def _pow_scale(fft, p):
     return np.power(np.abs(fft), p) * np.sign(fft)
-
 
 def overwrap(fft, length, size, stride, phase):
     X = np.zeros((size, length))
@@ -27,9 +25,7 @@ def overwrap(fft, length, size, stride, phase):
         comp_size = np.sqrt(np.power(f.real, 2)+np.power(f.imag, 2))
         comp = (comp_size * np.cos(p)) + (1j * comp_size * np.sin(p))
         dst[i * stride:i * stride + length] += np.fft.ifft(comp).real
-        #dst[i * stride:i * stride + length] += np.fft.ifft(f).real
     return dst
-
 
 def FFT(wav, length, stride, window, pos, size):
     wave_len = length
@@ -39,13 +35,7 @@ def FFT(wav, length, stride, window, pos, size):
     fft_phase = [np.arctan(f.imag/f.real) for f in data_fft]
     data_fft = data_fft[:, :size]
     data_fft = np.abs([data_fft], dtype='f4')
-
-    # im = data_fft
-    # plt.imshow(np.squeeze(im*256))
-    # plt.waitforbuttonpress(0)
-
     return data_fft, fft_phase
-
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--path', type=str,   default='./test.wav')
