@@ -106,3 +106,4 @@ IFFT_Test.py
 *.wav
 *.wav
 out_test.wav
+*.png

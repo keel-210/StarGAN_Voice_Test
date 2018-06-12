@@ -2,31 +2,14 @@ import numpy as np
 import os
 import random
 import scipy.io.wavfile as wav
-
-def load(path, time=-1): #pathのwav読み込み、bpsとnp.arrayを返す
-    bps, data = wav.read(path)
-    if len(data.shape) != 1:
-        data = data[:,0] + data[:,1]
-    if time > 0:
-        length = int(bps * time)
-        if length <= len(data):
-            dst = data[0:length]
-        else:
-            dst = np.zeros(length)
-            dst[0:len(data)] = data
-        data = dst
-    return bps, data
+import argparse
+import cv2
 
 def save(path, bps, data): #np.arrayからpathの位置にwavを書く
     if data.dtype != np.int16:
         data = data.astype(np.int16)
     data = np.reshape(data, -1)
     wav.write(path, bps, data)
-
-def find_wav(path): #path直下のデータパスの取得
-    name = os.listdir(path)
-    dst = [path + "/" + n for n in name]
-    return dst, name
 
 def image_single_split_pad(src, side, pos, power, scale, window): #スペクトログラムのデータ処理
     wave_len = side*2 - 2
@@ -38,19 +21,6 @@ def image_single_split_pad(src, side, pos, power, scale, window): #スペクト�
     spl *= scale
     return spl
 
-def image_single_pad(src, side, power, scale, window):
-    wave_len = side*2-2
-    src = np.array(src)
-    src *= scale
-    src = _pow_scale(src, power)
-    src = src.reshape((side, side))
-    mil = np.array(src[:,1:side-1][:,::-1])
-    src = np.concatenate([src, mil], 1)
-    mil = None
-
-    src = FGLA(src, wave_len, side, side, window)
-    return src
-
 def _pow_scale(fft, p):
     return np.power(np.abs(fft), p)
 
@@ -60,6 +30,43 @@ def overwrap(fft, length, dif, side):
         dst[i*dif:i*dif+length] += np.fft.ifft(f).real
     return dst
 
-def split(w, length, dif, side, window):
-    dst = np.array([np.fft.fft(w[i:i+length]*window) for i in range(0, side*dif, dif)])
-    return dst
+def FFT(wav, length, stride, window, pos, size, power, scale):
+	wave_len = length
+	data_fft = np.array([wav[p:p+wave_len, 0]*window for p in range(pos,pos + (wave_len - stride) + size * stride, stride)])
+	print(np.shape(data_fft))
+	data_fft = np.fft.fft(data_fft, axis=1)
+	fft_phase = np.arctan2(data_fft.imag, data_fft.real)
+	data_fft = data_fft[:, :size]
+	data_fft = np.abs([data_fft], dtype='f4')
+	data_fft = _pow_scale(data_fft, power)
+	data_fft *= scale
+
+	return data_fft, fft_phase
+
+def main():
+	parser = argparse.ArgumentParser(description='')
+	parser.add_argument('--path', type=str,   default='./test.wav')
+	parser.add_argument('--out_path', type=str, default='./FFT/')
+	parser.add_argument('--length', type=int, default=254)  # 254固定
+	parser.add_argument('--size', type=int, default=128)  # 128固定
+	parser.add_argument('--stride', type=int,   default=128)  # 128がよさげ
+	args = parser.parse_args()
+
+	stride = args.stride
+	wave_len = args.length
+	size = args.size
+	window = np.hanning(wave_len)
+	all_size = ((wave_len - stride) + size * stride)
+	power = 0.2
+	scale = 1/18
+
+	wav_bps, data = wav.read(args.path)
+
+	datas = np.zeros((100, ((args.length - stride) + size * stride)))
+
+	for i in range(10):
+		fft_abs, phase = FFT(data, wave_len, stride, window,i * all_size, size, power, scale)
+		cv2.imwrite(args.out_path+str(i)+'.png',fft_abs[0]*256)
+
+if __name__ == '__main__':
+	main()
