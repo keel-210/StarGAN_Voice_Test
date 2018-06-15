@@ -52,10 +52,10 @@ def preprocess_attr(attr_names, attrA_list, attrB_list, attr_keys):
 
 
 def preprocess_image(dataA_list, dataB_list, image_size, phase='train'):
-    imgA = [get_image(img_path, image_size, phase=phase) for img_path in dataA_list]
+    imgA = [np.load(img_path) for img_path in dataA_list]
     imgA = np.array(imgA)
 
-    imgB = [get_image(img_path, image_size, phase=phase) for img_path in dataB_list]
+    imgB = [np.load(img_path) for img_path in dataB_list]
     imgB = np.array(imgB)
     return imgA, imgB
 

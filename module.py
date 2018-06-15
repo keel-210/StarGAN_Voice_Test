@@ -1,5 +1,5 @@
 import tensorflow as tf
-import tf.contrib.slim as slim
+import tensorflow.contrib.slim as slim
 
 
 def batch_norm(x, name='batch_norm'):
