@@ -14,7 +14,7 @@ from StarGAN_Model import stargan
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--phase',          type=str,   default='train',    help='train or test')
 parser.add_argument('--gpu_number',     type=str,   default='0')
-parser.add_argument('--data_dir',       type=str,   default=os.path.join('.','data','celebA'))
+parser.add_argument('--data_dir',       type=str,   default=os.path.join('.','FFT'))
 parser.add_argument('--log_dir',        type=str,   default='log') # in assets/ directory
 parser.add_argument('--ckpt_dir',       type=str,   default='checkpoint') # in assets/ directory
 parser.add_argument('--sample_dir',     type=str,   default='sample') # in assets/ directory

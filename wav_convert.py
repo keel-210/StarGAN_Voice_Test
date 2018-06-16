@@ -1,39 +1,22 @@
 import numpy as np
 import os
-import random
-import scipy.io.wavfile as wav
+import sys
 import argparse
 import cv2
+import scipy.io.wavfile as wav
+import tqdm
 
-def save(path, bps, data): #np.arrayからpathの位置にwavを書く
-    if data.dtype != np.int16:
-        data = data.astype(np.int16)
-    data = np.reshape(data, -1)
-    wav.write(path, bps, data)
-
-def image_single_split_pad(src, side, pos, power, scale, window): #スペクトログラムのデータ処理
-    wave_len = side*2 - 2
-    spl = np.array([src[p:p+wave_len]*window for p in range(pos, pos+side*side, side)])
-    spl = np.fft.fft(spl, axis=1)
-    spl = spl[:,:side]
-    spl = np.abs([spl], dtype=np.float32)
-    spl = _pow_scale(spl, power)
-    spl *= scale
-    return spl
+def saveZ_datas(datas,path,attribute):
+	j = len(os.listdir(path))
+	for i in range(len(datas)):
+		np.savez_compressed(path+str(i + j)+'.npz',FFT=datas[i],attr=attribute)
 
 def _pow_scale(fft, p):
     return np.power(np.abs(fft), p)
 
-def overwrap(fft, length, dif, side):
-    dst = np.zeros(dif * (side-1)+length, dtype=float)
-    for i, f in enumerate(fft):
-        dst[i*dif:i*dif+length] += np.fft.ifft(f).real
-    return dst
-
 def FFT(wav, length, stride, window, pos, size, power, scale):
 	wave_len = length
-	data_fft = np.array([wav[p:p+wave_len, 0]*window for p in range(pos,pos + (wave_len - stride) + size * stride, stride)])
-	print(np.shape(data_fft))
+	data_fft = np.array([wav[p:p+wave_len, 0]*window for p in range(pos,pos + size * stride, stride)])
 	data_fft = np.fft.fft(data_fft, axis=1)
 	fft_phase = np.arctan2(data_fft.imag, data_fft.real)
 	data_fft = data_fft[:, :size]
@@ -50,6 +33,7 @@ def main():
 	parser.add_argument('--length', type=int, default=254)  # 254固定
 	parser.add_argument('--size', type=int, default=128)  # 128固定
 	parser.add_argument('--stride', type=int,   default=128)  # 128がよさげ
+	parser.add_argument('--attr',metavar='N', type=int, nargs='+',   default=[0,0,0,0,0,0,0])
 	args = parser.parse_args()
 
 	stride = args.stride
@@ -62,11 +46,11 @@ def main():
 
 	wav_bps, data = wav.read(args.path)
 
-	datas = np.zeros((100, ((args.length - stride) + size * stride)))
+	datas = np.zeros(((int)(len(data)/all_size), size,size))
 
-	for i in range(10):
+	for i in range((int)(len(data)/all_size)):
 		fft_abs, phase = FFT(data, wave_len, stride, window,i * all_size, size, power, scale)
-		cv2.imwrite(args.out_path+str(i)+'.png',fft_abs[0]*256)
-
+		datas[i] = fft_abs
+	saveZ_datas(datas,args.out_path,args.attr)
 if __name__ == '__main__':
 	main()

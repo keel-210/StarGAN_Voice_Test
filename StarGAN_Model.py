@@ -71,8 +71,10 @@ class stargan(object):
             tf.float32, [None, 1, 1, 1], name='gp_random_num')
         self.lr_decay = tf.placeholder(tf.float32, None, name='lr_decay')
 
+        print(np.shape(self.real_A))
         # generate image
         self.fake_B = generator(self.real_A, self.options, False, name='gen')
+        print(np.shape(self.fake_B))
         self.fake_A = generator(tf.concat([self.fake_B, self.real_A[:, :, :, self.image_channel:]], axis=3), self.options, True, name='gen')
 
         # discriminate image
