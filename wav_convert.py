@@ -2,7 +2,6 @@ import numpy as np
 import os
 import sys
 import argparse
-import cv2
 import scipy.io.wavfile as wav
 import tqdm
 
@@ -28,12 +27,13 @@ def FFT(wav, length, stride, window, pos, size, power, scale):
 
 def main():
 	parser = argparse.ArgumentParser(description='')
-	parser.add_argument('--path', type=str,   default='./test.wav')
-	parser.add_argument('--out_path', type=str, default='./FFT/')
+	parser.add_argument('--path', type=str,   default='./wav/Shiro.wav')
+	parser.add_argument('--out_path', type=str, default='./datas/')
 	parser.add_argument('--length', type=int, default=254)  # 254固定
 	parser.add_argument('--size', type=int, default=128)  # 128固定
 	parser.add_argument('--stride', type=int,   default=128)  # 128がよさげ
-	parser.add_argument('--attr',metavar='N', type=int, nargs='+',   default=[0,0,0,0,0,0,0])
+	parser.add_argument('--attr',metavar='N', type=int, nargs='+',   default=[0,1,0,0,0,1,0])
+	#self.attr_keys = ['Male', 'Female', 'KizunaAI', 'Nekomasu', 'Mirai', 'Shiro', 'Kaguya']
 	args = parser.parse_args()
 
 	stride = args.stride
@@ -44,12 +44,12 @@ def main():
 	power = 0.2
 	scale = 1/18
 
-	wav_bps, data = wav.read(args.path)
+	_, data = wav.read(args.path)
 
 	datas = np.zeros(((int)(len(data)/all_size), size,size))
 
 	for i in range((int)(len(data)/all_size)):
-		fft_abs, phase = FFT(data, wave_len, stride, window,i * all_size, size, power, scale)
+		fft_abs, _ = FFT(data, wave_len, stride, window,i * all_size, size, power, scale)
 		datas[i] = fft_abs
 	saveZ_datas(datas,args.out_path,args.attr)
 if __name__ == '__main__':

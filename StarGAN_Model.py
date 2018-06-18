@@ -133,10 +133,11 @@ class stargan(object):
         # load train data list & load attribute data ここで入力読み込み
         # data_dirとattr_extractの書き換えでおそらく入力変更可
         dataA_files = load_data_list(self.data_dir)
+        print(np.shape(dataA_files))
         dataB_files = np.copy(dataA_files)
         self.attr_names = ['Male', 'Female', 'KizunaAI', 'Nekomasu', 'Mirai', 'Shiro', 'Kaguya']
         self.attr_list = load_FFT_attr(self.data_dir)
-
+        print(np.shape(self.attr_list))
         # variable initialize
         self.sess.run(tf.global_variables_initializer())
 
@@ -165,8 +166,8 @@ class stargan(object):
                 #
                 dataA_list = dataA_files[idx * self.batch_size: (idx+1) * self.batch_size]
                 dataB_list = dataB_files[idx * self.batch_size: (idx+1) * self.batch_size]
-                attrA_list = [self.attr_list[os.path.basename(val)] for val in dataA_list]
-                attrB_list = [self.attr_list[os.path.basename(val)] for val in dataB_list]
+                attrA_list = [self.attr_list[int(os.path.basename(val.split('.')[1]))] for val in dataA_list]
+                attrB_list = [self.attr_list[int(os.path.basename(val.split('.')[1]))] for val in dataB_list]
 
                 # get batch images and labels
                 attrA, attrB = preprocess_attr(self.attr_names, attrA_list, attrB_list, self.attr_keys)
