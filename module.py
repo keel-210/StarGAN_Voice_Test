@@ -1,5 +1,6 @@
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
+import sys
 
 
 def batch_norm(x, name='batch_norm'):
@@ -57,22 +58,22 @@ def generator(images, options, reuse=False, name='gen'):
             assert tf.get_variable_scope().reuse is False
 
         # down sampling
-        x = relu(instance_norm(conv2d(images, options.nf,ks=7, s=1, name='gen_ds_conv1'), 'in1_1'))
-        x = relu(instance_norm(conv2d(x, 2*options.nf,ks=4, s=2, name='gen_ds_conv2'), 'in1_2'))
-        x = relu(instance_norm(conv2d(x, 4*options.nf,ks=4, s=2, name='gen_ds_conv3'), 'in1_3'))
+        x = relu(instance_norm(conv2d(images, options.nf, ks=7, s=1, name='gen_ds_conv1'), 'in1_1'))
+        x = relu(instance_norm(conv2d(x, 2*options.nf, ks=4, s=2, name='gen_ds_conv2'), 'in1_2'))
+        x = relu(instance_norm(conv2d(x, 4*options.nf, ks=4, s=2, name='gen_ds_conv3'), 'in1_3'))
 
         # bottleneck
-        x = relu(instance_norm(conv2d(x, 4*options.nf,ks=3, s=1, name='gen_bn_conv1'), 'in2_1'))
-        x = relu(instance_norm(conv2d(x, 4*options.nf,ks=3, s=1, name='gen_bn_conv2'), 'in2_2'))
-        x = relu(instance_norm(conv2d(x, 4*options.nf,ks=3, s=1, name='gen_bn_conv3'), 'in2_3'))
-        x = relu(instance_norm(conv2d(x, 4*options.nf,ks=3, s=1, name='gen_bn_conv4'), 'in2_4'))
-        x = relu(instance_norm(conv2d(x, 4*options.nf,ks=3, s=1, name='gen_bn_conv5'), 'in2_5'))
-        x = relu(instance_norm(conv2d(x, 4*options.nf,ks=3, s=1, name='gen_bn_conv6'), 'in2_6'))
+        x = relu(instance_norm(conv2d(x, 4*options.nf, ks=3, s=1, name='gen_bn_conv1'), 'in2_1'))
+        x = relu(instance_norm(conv2d(x, 4*options.nf, ks=3, s=1, name='gen_bn_conv2'), 'in2_2'))
+        x = relu(instance_norm(conv2d(x, 4*options.nf, ks=3, s=1, name='gen_bn_conv3'), 'in2_3'))
+        x = relu(instance_norm(conv2d(x, 4*options.nf, ks=3, s=1, name='gen_bn_conv4'), 'in2_4'))
+        x = relu(instance_norm(conv2d(x, 4*options.nf, ks=3, s=1, name='gen_bn_conv5'), 'in2_5'))
+        x = relu(instance_norm(conv2d(x, 4*options.nf, ks=3, s=1, name='gen_bn_conv6'), 'in2_6'))
 
         # up sampling
-        x = relu(instance_norm(deconv2d(x, 2*options.nf,ks=4, s=2, name='gen_us_deconv1'), 'in3_1'))
-        x = relu(instance_norm(deconv2d(x, options.nf, ks=4,s=2, name='gen_us_deconv2'), 'in3_2'))
-        #ここのdeconvの第二引数がgeneratorのチャンネルに当たる
+        x = relu(instance_norm(deconv2d(x, 2*options.nf, ks=4, s=2, name='gen_us_deconv1'), 'in3_1'))
+        x = relu(instance_norm(deconv2d(x, options.nf, ks=4, s=2, name='gen_us_deconv2'), 'in3_2'))
+        # ここのdeconvの第二引数がgeneratorのチャンネルに当たる
         x = tanh(deconv2d(x, 1, ks=7, s=1, name='gen_us_dwconv3'))
 
         return x
@@ -88,21 +89,21 @@ def discriminator(images, options, reuse=False, name='disc'):
 
         # input & hidden layer
         x = lrelu(conv2d(images, options.nf, ks=4, s=2, name='disc_conv1'))
-        x = lrelu(conv2d(x, 2*options.nf, ks=4, s=2, name='disc_conv2'))
-        x = lrelu(conv2d(x, 4*options.nf, ks=4, s=2, name='disc_conv3'))
-        x = lrelu(conv2d(x, 8*options.nf, ks=4, s=2, name='disc_conv4'))
-        x = lrelu(conv2d(x, 16*options.nf, ks=4, s=2, name='disc_conv5'))
-        x = lrelu(conv2d(x, 32*options.nf, ks=4, s=2, name='disc_conv6'))
+        x1 = lrelu(conv2d(x, 2*options.nf, ks=4, s=2, name='disc_conv2'))
+        x2 = lrelu(conv2d(x1, 4*options.nf, ks=4, s=2, name='disc_conv3'))
+        x3 = lrelu(conv2d(x2, 8*options.nf, ks=4, s=2, name='disc_conv4'))
+        x4 = lrelu(conv2d(x3, 16*options.nf, ks=4, s=2, name='disc_conv5'))
+        x5 = lrelu(conv2d(x4, 32*options.nf, ks=4, s=2, name='disc_conv6'))
         # (batch, h/64, w/64, 2048)
 
         # output layer
-        x = conv2d(x, 1+options.n_label, ks=1, s=1,
-                   name='disc_conv7')  # (batch, h/64, w/64, 1+n)
-        x = tf.reshape(tf.reduce_mean(
-            x, axis=[1, 2]), [-1, 1+options.n_label])  # (batch, 1+n)
-        src = x[:, 0]
-        cls = x[:, 1:]
-        return src, cls
+        x6 = conv2d(x5, 1+options.n_label, ks=1, s=1,
+                    name='disc_conv7')  # (batch, h/64, w/64, 1+n)
+        x7 = tf.reshape(tf.reduce_mean(
+            x6, axis=[1, 2]), [-1, 1+options.n_label])  # (batch, 1+n)
+        src = x7[:, 0]
+        cls = x7[:, 1:]
+        return src, cls, x6
 
 
 def wgan_gp_loss(real_img, fake_img, options, epsilon):
@@ -125,3 +126,17 @@ def cls_loss(logits, labels):
 
 def recon_loss(image1, image2):
     return tf.reduce_mean(tf.abs(image1 - image2))
+
+
+def feature_loss(feats_real, feats_fake):
+    losses = 0
+    feat_real_mean = tf.map_fn(calc_mean, feats_real)
+    feat_fake_mean = tf.map_fn(calc_mean, feats_fake)
+    l2 = (feat_real_mean - feat_fake_mean) ** 2
+    loss = tf.reduce_mean(l2)
+    losses = tf.reduce_sum(loss)
+    return losses
+
+
+def calc_mean(tensor):
+    return tf.reduce_mean(tensor)

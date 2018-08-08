@@ -8,7 +8,7 @@ import tqdm
 def saveZ_datas(datas,path,attribute):
 	j = len(os.listdir(path))
 	for i in range(len(datas)):
-		np.savez_compressed(path+str(i + j)+'.npz',FFT=datas[i],attr=attribute)
+		np.savez_compressed(path+str('{0:06d}'.format(i + j))+'.npz',FFT=datas[i],attr=attribute)
 
 def _pow_scale(fft, p):
     return np.power(np.abs(fft), p)
@@ -27,12 +27,12 @@ def FFT(wav, length, stride, window, pos, size, power, scale):
 
 def main():
 	parser = argparse.ArgumentParser(description='')
-	parser.add_argument('--path', type=str,   default='./wav/Shiro.wav')
-	parser.add_argument('--out_path', type=str, default='./datas/')
+	parser.add_argument('--path', type=str,   default='./wav/Akari.wav')
+	parser.add_argument('--out_path', type=str, default='./all_datas/')
 	parser.add_argument('--length', type=int, default=254)  # 254固定
 	parser.add_argument('--size', type=int, default=128)  # 128固定
 	parser.add_argument('--stride', type=int,   default=128)  # 128がよさげ
-	parser.add_argument('--attr',metavar='N', type=int, nargs='+',   default=[0,1,0,0,0,1,0])
+	parser.add_argument('--attr',metavar='N', type=int, nargs='+',   default=[0,1,0,0,1,0,0])
 	#self.attr_keys = ['Male', 'Female', 'KizunaAI', 'Nekomasu', 'Mirai', 'Shiro', 'Kaguya']
 	args = parser.parse_args()
 
@@ -51,6 +51,7 @@ def main():
 	for i in range((int)(len(data)/all_size)):
 		fft_abs, _ = FFT(data, wave_len, stride, window,i * all_size, size, power, scale)
 		datas[i] = fft_abs
-	saveZ_datas(datas,args.out_path,args.attr)
+	if(datas != np.zeros(((int)(len(data)/all_size), size,size))):
+		saveZ_datas(datas,args.out_path,args.attr)
 if __name__ == '__main__':
 	main()

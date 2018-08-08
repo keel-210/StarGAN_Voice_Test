@@ -4,6 +4,7 @@ from collections import namedtuple
 import numpy as np
 import scipy.misc as scm
 import matplotlib.pyplot as plt
+import sys
 
 
 def load_data_list(data_dir):
@@ -54,8 +55,10 @@ def preprocess_attr(attr_names, attrA_list, attrB_list, attr_keys):
 def preprocess_image(dataA_list, dataB_list, image_size, phase='train'):
     imgA = [np.load(img_path) for img_path in dataA_list]
     imgA = [img['FFT'] for img in imgA]
+    imgA = [[[[img] for img in fstdim] for fstdim in i] for i in imgA]
     imgB = [np.load(img_path) for img_path in dataB_list]
     imgB = [img['FFT'] for img in imgB]
+    imgB = [[[[img] for img in fstdim] for fstdim in i] for i in imgB]
     return imgA, imgB
 
 
@@ -63,8 +66,6 @@ def preprocess_input(imgA, imgB, attrA, attrB, image_size, n_label):
     # dataA = imgA + attrB , dataB = imgB + attrA
     attrA = np.tile(np.reshape(attrA, [-1,1,1,n_label]),[1,image_size,image_size,1])
     attrB = np.tile(np.reshape(attrB, [-1,1,1,n_label]),[1,image_size,image_size,1])
-    print(np.shape(imgA))
-    print(np.shape(attrB))
     dataA = np.concatenate((imgA, attrB), axis=3)
     dataB = np.concatenate((imgB, attrA), axis=3)
     return dataA, dataB
@@ -96,17 +97,19 @@ def save_images(realA, realB, fake_B, image_size, sample_file, num=10):
                           realA[5:,:,:,:],fake_B[5:,:,:,:]), axis=0)
         img = make3d(img, image_size, row=5, col=4)
     else: # for sample while training
-        img = np.concatenate((realA[:5,:,:,:],realB[:5,:,:,:],fake_B[:5,:,:,:],
-                          realA[5:,:,:,:],realB[5:,:,:,:],fake_B[5:,:,:,:]), axis=0)
+        img = np.concatenate((realA[:5],realB[:5],fake_B[:5],
+                          realA[:5],realB[:5],fake_B[:5]), axis=0)
         img = make3d(img, image_size, row=5, col=6)
+        
     img = inverse_image(img)
+    img = np.reshape(img,[640,768])
     scm.imsave(sample_file, img)
-
+  
 
 def make3d(img, image_size, row, col):
     # img.shape = [row*col, h, w, c]
     # final: [row*h, col*w, c]
-    img = np.reshape(img, [col,row,image_size,image_size,3]) # [col, row, h, w, c]
+    img = np.reshape(img, [col,row,image_size,image_size,1]) # [col, row, h, w, c]
     img = unstack(img, axis=0) # col * [row, h, w, c]
     img = np.concatenate(img, axis=2) # [row, h, col*w, c]
     img = unstack(img, axis=0) # row * [h, col*w, c]

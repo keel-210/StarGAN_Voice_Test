@@ -108,3 +108,5 @@ IFFT_Test.py
 out_test.wav
 *.png
 *.npz
+assets/GAN_label7_img128/
+assets/WGAN_label7_img128/

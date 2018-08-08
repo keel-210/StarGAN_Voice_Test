@@ -7,9 +7,9 @@ from collections import namedtuple
 from tqdm import tqdm
 from glob import glob
 
-from module import batch_norm, instance_norm, conv2d, deconv2d, relu, lrelu, tanh, generator, discriminator, wgan_gp_loss, gan_loss, cls_loss, recon_loss
+from module import batch_norm, instance_norm, conv2d, deconv2d, relu, lrelu, tanh, generator, discriminator, wgan_gp_loss, gan_loss, cls_loss, recon_loss, feature_loss
 from util import load_data_list, attr_extract, preprocess_attr, preprocess_image, preprocess_input, save_images
-from wav_util import load_FFT_attr
+from wav_util import load_FFT_attr, save_wav
 
 
 class stargan(object):
@@ -31,7 +31,10 @@ class stargan(object):
         self.lambda_gp = args.lambda_gp
         self.lambda_cls = args.lambda_cls  # 1
         self.lambda_rec = args.lambda_rec  # 10
+        self.lambda_feat = args.lambda_feat  # 9
         self.lr = args.lr  # 0.0001
+        self.lr_g = args.lr_g
+        self.lr_d = args.lr_d
         self.beta1 = args.beta1  # 0.5
         self.continue_train = args.continue_train  # False
         self.snapshot = args.snapshot  # 100
@@ -60,28 +63,29 @@ class stargan(object):
     def build_model(self):
         # placeholder
         # input_image: A, target_image: B
-        self.real_A = tf.placeholder(tf.float32,[None, self.image_size, self.image_size,self.image_channel + self.n_label],name='input_images')
-        self.real_B = tf.placeholder(tf.float32,[None, self.image_size, self.image_size,self.image_channel + self.n_label],name='target_images')
+        self.real_A = tf.placeholder(tf.float32, [None, self.image_size, self.image_size, self.image_channel + self.n_label], name='input_images')
+        self.real_B = tf.placeholder(tf.float32, [None, self.image_size, self.image_size, self.image_channel + self.n_label], name='target_images')
         self.attr_B = tf.placeholder(tf.float32, [None, self.n_label], name='target_attr')
 
-        self.fake_B_sample = tf.placeholder(tf.float32,[None, self.image_size,self.image_size
-        , self.image_channel],name='fake_images_sample')  # use when updating discriminator
+        self.fake_B_sample = tf.placeholder(tf.float32, [None, self.image_size, self.image_size,
+                                                         self.image_channel], name='fake_images_sample')  # use when updating discriminator
 
         self.epsilon = tf.placeholder(
             tf.float32, [None, 1, 1, 1], name='gp_random_num')
         self.lr_decay = tf.placeholder(tf.float32, None, name='lr_decay')
 
-        print(np.shape(self.real_A))
         # generate image
         self.fake_B = generator(self.real_A, self.options, False, name='gen')
-        print(np.shape(self.fake_B))
         self.fake_A = generator(tf.concat([self.fake_B, self.real_A[:, :, :, self.image_channel:]], axis=3), self.options, True, name='gen')
 
         # discriminate image
-        # src: real or fake, cls: domain classification
-        self.src_real_B, self.cls_real_B = discriminator(self.real_B[:, :, :, :self.image_channel],self.options, False, name='disc')
-        self.g_src_fake_B, self.g_cls_fake_B = discriminator(self.fake_B, self.options, True, name='disc')  # use when updating generator
-        self.d_src_fake_B, self.d_cls_fake_B = discriminator(self.fake_B_sample, self.options, True, name='disc')  # use when updating discriminator
+        # src: real or fake, cls: domain classification,feat feature matching
+        self.src_real_B, self.cls_real_B, self.feat_real_B = discriminator(
+            self.real_B[:, :, :, :self.image_channel], self.options, False, name='disc')
+        self.g_src_fake_B, self.g_cls_fake_B, self.g_feat_fake_B = discriminator(
+            self.fake_B, self.options, True, name='disc')  # use when updating generator
+        self.d_src_fake_B, self.d_cls_fake_B, _ = discriminator(
+            self.fake_B_sample, self.options, True, name='disc')  # use when updating discriminator
 
         # loss
         ## discriminator loss ##
@@ -110,9 +114,11 @@ class stargan(object):
         # reconstruction loss
         self.g_recon_loss = recon_loss(
             self.real_A[:, :, :, :self.image_channel], self.fake_A)
+
+        # feature loss
+        self.feat_loss = feature_loss(self.feat_real_B, self.g_feat_fake_B)
         # gen loss function
-        self.g_loss = self.g_adv_loss + self.lambda_cls * \
-            self.g_fake_cls_loss + self.lambda_rec * self.g_recon_loss
+        self.g_loss = self.g_adv_loss + self.lambda_cls * self.g_fake_cls_loss + self.lambda_rec * self.g_recon_loss + self.lambda_feat * self.feat_loss
 
         # trainable variables
         t_vars = tf.trainable_variables()
@@ -122,9 +128,9 @@ class stargan(object):
 
         # optimizer
         self.d_optim = tf.train.AdamOptimizer(
-            self.lr * self.lr_decay, beta1=self.beta1).minimize(self.d_loss, var_list=self.d_vars)
+            self.lr_g * self.lr_decay, beta1=self.beta1).minimize(self.d_loss, var_list=self.d_vars)
         self.g_optim = tf.train.AdamOptimizer(
-            self.lr * self.lr_decay, beta1=self.beta1).minimize(self.g_loss, var_list=self.g_vars)
+            self.lr_d * self.lr_decay, beta1=self.beta1).minimize(self.g_loss, var_list=self.g_vars)
 
     def train(self):
         # summary setting
@@ -133,11 +139,9 @@ class stargan(object):
         # load train data list & load attribute data ここで入力読み込み
         # data_dirとattr_extractの書き換えでおそらく入力変更可
         dataA_files = load_data_list(self.data_dir)
-        print(np.shape(dataA_files))
         dataB_files = np.copy(dataA_files)
         self.attr_names = ['Male', 'Female', 'KizunaAI', 'Nekomasu', 'Mirai', 'Shiro', 'Kaguya']
         self.attr_list = load_FFT_attr(self.data_dir)
-        print(np.shape(self.attr_list))
         # variable initialize
         self.sess.run(tf.global_variables_initializer())
 
@@ -161,7 +165,7 @@ class stargan(object):
             np.random.shuffle(dataA_files)
             np.random.shuffle(dataB_files)
 
-            for idx in tqdm(range(batch_idxs)):
+            for idx in tqdm(range(batch_idxs), ascii=True):
                 count += 1
                 #
                 dataA_list = dataA_files[idx * self.batch_size: (idx+1) * self.batch_size]
@@ -181,7 +185,8 @@ class stargan(object):
                 # update D network for 5 times
                 for _ in range(5):
                     epsilon = np.random.rand(self.batch_size, 1, 1, 1)
-                    feed = {self.fake_B_sample: fake_B, self.real_B: dataB, self.attr_B: np.array(attrB), self.epsilon: epsilon, self.lr_decay: lr_decay}
+                    feed = {self.fake_B_sample: fake_B, self.real_B: dataB, self.attr_B: np.array(
+                        attrB), self.epsilon: epsilon, self.lr_decay: lr_decay}
                     _, d_loss, d_summary = self.sess.run([self.d_optim, self.d_loss, self.d_sum], feed_dict=feed)
 
                 # updatae G network for 1 time
@@ -202,7 +207,7 @@ class stargan(object):
                     self.checkpoint_save(count)
 
                     # save samples (from test dataset)
-                    self.sample_save(count)
+                    self.sample_save(epoch)
 
     def test(self):
         # check if attribute available
@@ -280,10 +285,12 @@ class stargan(object):
         test_files = glob(os.path.join(self.data_dir, 'test', '*'))
 
         # [5,6] with the seequnce of (realA, realB, fakeB), totally 10 set save
-        testA_list = random.sample(test_files, 10)
-        testB_list = random.sample(test_files, 10)
-        attrA_list = [self.attr_list[os.path.basename(val)] for val in testA_list]
-        attrB_list = [self.attr_list[os.path.basename(val)] for val in testB_list]
+        # self.attr_keys = ['Male', 'Female', 'KizunaAI', 'Nekomasu', 'Mirai', 'Shiro', 'Kaguya']
+        testA_list = test_files[:50]
+        testB_list = test_files[:50]
+        attrA_list = [np.load(val)['attr'] for val in testA_list]
+        attrB_list = [self.binary_attrs] * len(testB_list)
+        phaseA_list = [np.load(val)['phase'] for val in testA_list]
 
         # get batch images and labels
         attrA, attrB = preprocess_attr(self.attr_names, attrA_list, attrB_list, self.attr_keys)
@@ -295,5 +302,5 @@ class stargan(object):
         fake_B = self.sess.run(self.fake_B, feed_dict=feed)
 
         # save samples
-        sample_file = os.path.join(self.sample_dir, '%06d.jpg' % (step))
-        save_images(imgA, imgB, fake_B, self.image_size, sample_file, num=10)
+        sample_file = os.path.join(self.sample_dir, '%06d' % (step))
+        save_wav(imgA, imgB, fake_B, self.image_size, sample_file, phaseA_list, num=10)
