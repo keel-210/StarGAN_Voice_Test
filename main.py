@@ -20,7 +20,7 @@ parser.add_argument('--ckpt_dir',       type=str,   default='checkpoint')  # in 
 parser.add_argument('--sample_dir',     type=str,   default='sample')  # in assets/ directory
 parser.add_argument('--test_dir',       type=str,   default='test')  # in assets/ directory
 parser.add_argument('--epoch',          type=int,   default=100)
-parser.add_argument('--batch_size',     type=int,   default=12)
+parser.add_argument('--batch_size',     type=int,   default=16)
 parser.add_argument('--image_size',     type=int,   default=128)
 parser.add_argument('--image_channel',  type=int,   default=1)
 parser.add_argument('--nf',             type=int,   default=64)  # number of filters
@@ -28,16 +28,16 @@ parser.add_argument('--n_label',        type=int,   default=7)
 parser.add_argument('--lambda_gp',      type=int,   default=1)
 parser.add_argument('--lambda_cls',     type=int,   default=1)
 parser.add_argument('--lambda_rec',     type=int,   default=10)
-parser.add_argument('--lambda_feat',     type=int,   default=0.00003)
+parser.add_argument('--lambda_feat',    type=int,   default=2.5)
 parser.add_argument('--lr',             type=float, default=0.00001)  # learning_rate
-parser.add_argument('--lr_g',             type=float, default=0.00001)  # learning_rate
-parser.add_argument('--lr_d',             type=float, default=0.0001)  # learning_rate
+parser.add_argument('--lr_g',           type=float, default=0.000015)  # learning_rate
+parser.add_argument('--lr_d',           type=float, default=0.000015)  # learning_rate
 parser.add_argument('--beta1',          type=float, default=0.5)
 parser.add_argument('--continue_train', type=bool,  default=False)
-parser.add_argument('--snapshot',       type=int,   default=1714)  # number of iterations to save files
-parser.add_argument('--adv_type',       type=str,   default='WGAN',     help='GAN or WGAN')
+parser.add_argument('--snapshot',       type=int,   default=1286)  # number of iterations to save files
+parser.add_argument('--adv_type',       type=str,   default='GAN',     help='GAN or WGAN')
 parser.add_argument('--binary_attrs',   type=str,   default='0110000')
-#self.attr_keys = ['Male', 'Female', 'KizunaAI', 'Nekomasu', 'Mirai', 'Shiro', 'Kaguya']
+#self.attr_keys = ['Male', 'Female', 'KizunaAI', 'Nekomasu', 'Mirai', 'Shiro', 'Kaguya'] 
 
 args = parser.parse_args()
 
