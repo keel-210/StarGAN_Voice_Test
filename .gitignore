@@ -110,3 +110,5 @@ out_test.wav
 *.npz
 assets/GAN_label7_img128/
 assets/WGAN_label7_img128/
+.vscode/settings.json
+.vscode/settings.json

@@ -46,26 +46,33 @@ stride = 128
 wave_len = 254
 size = 128
 all_size = ((wave_len - stride) + size * stride)
-window = np.hanning(all_size)
 power = 0.2
 scale = 1/18
 path = './test.wav'
 out_path = './cepstrum_test.wav'
 
 wav_bps, data = wav.read(path)
+window = np.hanning(wav_bps*1)
 
 datas = np.zeros((100, ((wave_len - stride) + size * stride)))
 
-for i in range(1):
-    pos = 4 * all_size
-    data_fft = np.array(data[pos:pos+(wave_len-size)+size*stride, 0]*window, dtype='float32')
-    ceps = pysptk.sptk.mcep(data_fft, miniter=2, order=127, etype=2, eps=-2.71828)
-    ceps = np.array(ceps, dtype='float64')
-    delay = np.zeros(all_size*5)
-    mlsa = pysptk.sptk.mlsadf(127, ceps, 0.35, 4, delay)
-    pitch = pysptk.sptk.rapt(data_fft, wav_bps, (int)(wav_bps / 100), otype='pitch')
-    pitch = np.array(pitch, dtype='float64')
-    pitch = pysptk.sptk.excite(pitch, wav_bps)
-    pitch *= 1000
-    plt.plot(pitch)
-    plt.show()
+pos = 4 * all_size
+data_raw = np.array(data[pos:pos+wav_bps*1], dtype='float32')
+data_fft = np.array(data_raw*window, dtype='float32')
+ceps = pysptk.sptk.mcep(data_fft, miniter=2, order=128, etype=2, eps=-1)
+ceps = np.array(ceps, dtype='float64')
+pitch = pysptk.sptk.rapt(data_raw, wav_bps, 50, otype='pitch')
+pitch = np.array(pitch, dtype='float64')
+pitch = pysptk.sptk.excite(pitch, 100)
+pitch *= 500
+#pitch = [p if p<10 else p*500 for p in pitch]
+delay = pysptk.sptk.mlsadf_delay(128,4)
+mlsa = np.array([pysptk.sptk.mlsadf(p, ceps, 0.42, 4, delay) for p in pitch],dtype='int16')
+plt.subplot(3,1,1)
+plt.plot(data_raw)
+plt.subplot(3,1,2)
+plt.plot(pitch)
+plt.subplot(3,1,3)
+plt.plot(mlsa)
+plt.show()
+wav.write(out_path,wav_bps,mlsa)
