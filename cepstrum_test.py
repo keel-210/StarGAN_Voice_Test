@@ -41,6 +41,7 @@ def FFT(wav, length, stride, window, pos, size):
 
     return data_fft, fft_phase
 
+
 stride = 128
 wave_len = 254
 size = 128
@@ -48,7 +49,7 @@ all_size = ((wave_len - stride) + size * stride)
 window = np.hanning(all_size)
 power = 0.2
 scale = 1/18
-path ='./test.wav'
+path = './test.wav'
 out_path = './cepstrum_test.wav'
 
 wav_bps, data = wav.read(path)
@@ -57,19 +58,14 @@ datas = np.zeros((100, ((wave_len - stride) + size * stride)))
 
 for i in range(1):
     pos = 4 * all_size
-    data_fft = np.array(data[pos:pos+(wave_len-size)+size*stride]*window,dtype='float32')
-    ceps = pysptk.sptk.mcep(data_fft,order= 127,etype=2,eps=-2.71828)
-    pitch = pysptk.sptk.rapt(data_fft,wav_bps,(int)(wav_bps/100),otype='pitch')
-    #fft_abs, phase = FFT(data, wave_len, stride, window,10 * all_size, size)
-    # log_fft = np.log(fft_abs[0])
-    # ceps = np.fft.fft(log_fft)
+    data_fft = np.array(data[pos:pos+(wave_len-size)+size*stride, 0]*window, dtype='float32')
+    ceps = pysptk.sptk.mcep(data_fft, miniter=2, order=127, etype=2, eps=-2.71828)
+    ceps = np.array(ceps, dtype='float64')
+    delay = np.zeros(all_size*5)
+    mlsa = pysptk.sptk.mlsadf(127, ceps, 0.35, 4, delay)
+    pitch = pysptk.sptk.rapt(data_fft, wav_bps, (int)(wav_bps / 100), otype='pitch')
+    pitch = np.array(pitch, dtype='float64')
+    pitch = pysptk.sptk.excite(pitch, wav_bps)
+    pitch *= 1000
     plt.plot(pitch)
     plt.show()
-    #data_ifft = overwrap(fft_abs[0], wave_len, size, stride, phase, scale)
-    #data_ifft = np.reshape(data_ifft, -1)
-    #datas[i] = data_ifft
-
-#datas = np.reshape(datas, -1)
-#datas = np.array(datas, np.int16)
-
-#wav.write(out_path, wav_bps, datas)
