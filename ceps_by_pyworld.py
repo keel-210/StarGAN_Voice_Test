@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pysptk
 import pyworld as pw
 
-path = './test.wav'
+path = './1001000test.wav'
 out_path = './cepstrum_test_pyworld.wav'
 ideal_path = './cepstrum_test_pyworld_ideal.wav'
 # read .wav
@@ -13,9 +13,9 @@ wav_bps, data = wav.read(path)
 alpha = 0.43
 order = 63
 length = 14000
-pos = 2 * wav_bps
+pos = int(8.5 * wav_bps)
 
-data_raw = np.array(data[pos:pos + wav_bps*5], dtype='float64')
+data_raw = np.array(data[pos:pos + length], dtype='float64')
 f0, sp, pitch = pw.wav2world(data_raw, wav_bps)
 ceps = pysptk.sp2mc(sp, order, alpha)
 print(np.shape(ceps))

@@ -54,10 +54,10 @@ def preprocess_attr(attr_names, attrA_list, attrB_list, attr_keys):
 
 def preprocess_image(dataA_list, dataB_list, image_size, phase='train'):
     imgA = [np.load(img_path) for img_path in dataA_list]
-    imgA = [img['FFT'] for img in imgA]
+    imgA = [img['MCep'] for img in imgA]
     imgA = [[[[img] for img in fstdim] for fstdim in i] for i in imgA]
     imgB = [np.load(img_path) for img_path in dataB_list]
-    imgB = [img['FFT'] for img in imgB]
+    imgB = [img['MCep'] for img in imgB]
     imgB = [[[[img] for img in fstdim] for fstdim in i] for i in imgB]
     return imgA, imgB
 

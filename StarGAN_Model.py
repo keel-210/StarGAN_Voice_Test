@@ -9,7 +9,7 @@ from glob import glob
 
 from module import batch_norm, instance_norm, conv2d, deconv2d, relu, lrelu, tanh, generator, discriminator, wgan_gp_loss, gan_loss, cls_loss, recon_loss, feature_loss
 from util import load_data_list, attr_extract, preprocess_attr, preprocess_image, preprocess_input, save_images
-from wav_util import load_FFT_attr, save_wav
+from wav_util import load_FFT_attr, save_wav,save_wav_ceps
 
 
 class stargan(object):
@@ -290,7 +290,7 @@ class stargan(object):
         testB_list = test_files[:50]
         attrA_list = [np.load(val)['attr'] for val in testA_list]
         attrB_list = [self.binary_attrs] * len(testB_list)
-        phaseA_list = [np.load(val)['phase'] for val in testA_list]
+        #phaseA_list = [np.load(val)['phase'] for val in testA_list]
 
         # get batch images and labels
         attrA, attrB = preprocess_attr(self.attr_names, attrA_list, attrB_list, self.attr_keys)
@@ -303,4 +303,5 @@ class stargan(object):
 
         # save samples
         sample_file = os.path.join(self.sample_dir, '%06d' % (step))
-        save_wav(imgA, imgB, fake_B, self.image_size, sample_file, phaseA_list, num=10)
+        #save_wav(imgA, imgB, fake_B, self.image_size, sample_file, phaseA_list, num=10)
+        save_wav_ceps(fake_B,'./data_test_mcep/test.wav', sample_file)

@@ -2,6 +2,8 @@ import numpy as np
 import os
 import scipy.io.wavfile as wav
 import sys
+import pyworld as pw
+import pysptk
 
 stride = 128
 wave_len = 254
@@ -14,7 +16,7 @@ scale = 1/18
 def load_FFT_attr(data_dir):
     attr_list = np.zeros((len(os.listdir(data_dir+'\\train\\')),7))
     for i in range(len(os.listdir(data_dir))):
-        data = np.load(data_dir+'\\train\\'+str(i)+'.npz')
+        data = np.load(data_dir+'\\train\\'+'{0:06d}'.format(i)+'.npz')
         attr_list[i] = data['attr']
     return  attr_list
 
@@ -55,3 +57,22 @@ def save_wav(realA, realB, fake_B, image_size, sample_file, phase, num=10):
     datas = np.array(datas, np.int16)
     wav.write(sample_file+'_fake.wav', 44100, datas)
     
+def save_wav_ceps(fake_B,input_path, sample_path):
+    length = 14000
+    bps,wav_data = wav.read(input_path)
+    datas = [wav_data[i:i+length,0] for i in range(0,len(wav_data),length)]
+    wave = np.zeros([len(fake_B),length])
+    for (b,d) in zip(fake_B,datas):
+        f0,_,pitch = pw.wav2world(d, bps)
+        for cep in b:
+            for i,Scep in enumerate(cep):
+                if(i==0):
+                    Scep = (Scep*28)-20
+                else:
+                    Scep = (Scep*7)-3
+                cep[i] = Scep
+        sp = pysptk.mc2sp(b,0.48,2048)
+        w = pw.synthesize(f0, sp, pitch, bps)
+        np.append(wave,w)
+    wave = np.reshape(wave,-1).astype('int16')
+    wav.write(sample_path+'_fake.wav', bps, wave)
